@@ -1,0 +1,73 @@
+<aura:component controller="RequestReviewController" implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="reviews" type="Object"/>
+    <aura:attribute name="userProfile" type="Object" />
+    <aura:attribute name="loggedInUser" type="Object" />
+    <aura:attribute name="isLoggedInUser" type="Boolean" default="false"/>
+    
+    <lightning:card title="{!'Reviews (' + v.reviews.length + ')'}" iconName="standard:account">
+        <aura:set attribute="actions">
+            <lightning:button onclick="{! c.writeAReview }" variant="neutral" label="Write"/>
+            <aura:if isTrue="{!v.isLoggedInUser}">
+                <lightning:button onclick="{! c.requestAReview }" variant="neutral" label="Request a Review"/>
+            </aura:if>
+        </aura:set>
+        <aura:if isTrue="{!v.reviews != null}">
+        	<aura:iteration items="{!v.reviews}" var="item">
+                <div class="slds-tile slds-card__body--inner slds-p-bottom--small">
+                    <lightning:tile label="{!item.CreatedBy.Name}" href="{!'/'+item.CreatedById}">
+                        <aura:set attribute="media">
+                            <lightning:avatar src="{!item.CreatedBy.SmallPhotoUrl}" 
+                                              alternativeText="{!item.CreatedBy.Name}"
+                                              size="small"
+                                              fallbackIconName="standard:people" />
+                        </aura:set>
+                        <dl class="slds-dl_vertical">
+                            <dt>
+                                <span class="slds-text-title" title="{!item.CreatedBy.Title}">{!item.CreatedBy.Title}</span>
+                            </dt>
+                            <dd>
+                                <span class="slds-text-body_small" title="Review Date"><ui:outputDate format="MM/dd/YYYY" value="{!item.CreatedDate}"/></span>
+                            </dd>
+                            <dd>
+                               	<p title="Topic" class="slds-text-body_regular">
+                                    <aura:if isTrue="{!item.Reaction__c=='Very Happy'}"> 
+                                		<img style="width:18px;" src="{!$Resource.emojis + '/veryhappy.svg'}" />
+                                    </aura:if>
+                                    <aura:if isTrue="{!item.Reaction__c=='Happy'}"> 
+                                		<img style="width:18px;" src="{!$Resource.emojis + '/happy.svg'}" />
+                                    </aura:if>
+                                    <aura:if isTrue="{!item.Reaction__c=='Sad'}"> 
+                                		<img style="width:18px;" src="{!$Resource.emojis + '/sad.svg'}" />
+                                    </aura:if>
+                                    <aura:if isTrue="{!item.Reaction__c=='Very sad'}"> 
+                                		<img style="width:18px;" src="{!$Resource.emojis + '/verysad.svg'}" />
+                                    </aura:if>
+                                    {!item.Topic__c}
+                                </p>
+                            </dd>
+                            <dd>
+                            	<p title="Review" class="slds-text-body_small">{!item.Review__c}</p>
+                        	</dd>
+                            <aura:if isTrue="{!v.isLoggedInUser}">
+                                <dd>
+                                	<lightning:input type="toggle"
+                                                     label="Public"
+                                                     name="public"
+                                                     checked="{!item.isPublic__c}"
+                                                     messageToggleActive=""
+                                                     messageToggleInactive=""
+                                                     onchange="{!c.updateReview}"/>
+                                </dd>
+                            </aura:if>
+                        </dl>
+                    </lightning:tile>
+                </div>
+                </aura:iteration>
+                <aura:set attribute="else">
+                    <p>No reviews to display</p>
+                </aura:set>
+        	</aura:if>
+      
+    </lightning:card>
+</aura:component>

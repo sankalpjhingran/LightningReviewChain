@@ -1,0 +1,7 @@
+<aura:component implements="flexipage:availableForRecordHome,force:appHostable,force:hasRecordId,force:lightningQuickActionWithoutHeader" access="global">
+    <lightning:layout horizontalAlign="center">
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <lightning:button onclick="{! c.handleClick }" variant="brand" label="Request a Review"/>
+            </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

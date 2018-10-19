@@ -1,0 +1,15 @@
+<apex:page controller="writeReviewRedirectController">
+    <apex:includeLightning />
+    <apex:slds />
+	<div id="lightning" />
+    <script>
+        $Lightning.use("c:ltngreviewout", function() {
+          $Lightning.createComponent("c:AskForReviewDialog",
+          { receipientId : '{!receipientId}', isRequest : false, isReplying : true, replyToReviewId : '{!replyToReviewId}'},
+          "lightning",
+          function(cmp) {
+            // do some stuff
+          });
+        });
+    </script>
+</apex:page>

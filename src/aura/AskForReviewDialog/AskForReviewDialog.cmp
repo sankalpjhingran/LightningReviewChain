@@ -1,0 +1,167 @@
+<aura:component controller="RequestReviewController" implements="flexipage:availableForRecordHome,force:appHostable,force:hasRecordId,force:lightningQuickAction" access="global">
+    <aura:attribute name="review" type="Review__c" default="{ 'sobjectType': 'Review__c' }"/>
+    <aura:attribute name="reviewReply" type="Review__c" default="{ 'sobjectType': 'Review__c' }"/>
+    <aura:attribute name="replyToReview" type="Review__c" default="{ 'sobjectType': 'Review__c' }"/>
+    <aura:attribute name="reviewFromEmailLink" type="Review__c" default="{ 'sobjectType': 'Review__c' }"/>
+    <aura:attribute name="replyToReviewId" type="String" />
+    <aura:attribute name="requesterId" type="String" />
+    <aura:attribute name="receipientId" type="String" />
+    <aura:attribute name="receipient" type="User" />
+    <aura:attribute name="message" type="String" />
+    <aura:attribute name="isRequest" type="Boolean" />
+    <aura:attribute name="isReplying" type="Boolean" />
+    <aura:attribute name="recentlyViewedRecs" type="RecentlyViewed[]" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:if isTrue="{!v.isRequest}">
+        <section aura:id="askareviewdialog" role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_small">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Request a Review</h2>
+                    <p class="slds-m-top_x-small">Lookup a user and write a message requesting a review</p>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:layout>
+                        <lightning:layoutItem flexibility="auto" padding="around-small">
+                            <label class="slds-form-element__label">Select a User
+                                <force:inputField   aura:id="userid" 
+                                                  value="{!v.review.User__c}" />
+                            </label>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem flexibility="auto" padding="around-small">
+                            <lightning:textarea value="{!v.message}" label="Write a Message"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick="{! c.closeAskReviewModal }">Go back</button>
+                    <button class="slds-button slds-button_brand" onclick="{! c.requestReview }">Request</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" aura:id="backdrop"></div>
+        
+        <aura:set attribute="else">
+            <section aura:id="writereviewdialog" role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <aura:if isTrue="{!v.isReplying}">
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Good News! Sankalp Jhingran left you a review.</h2>
+                            <div style="align:center">
+                                <span>TOPIC: {!v.reviewFromEmailLink.Topic__c}</span><br/>
+                                <span>REVIEW: {!v.reviewFromEmailLink.Review__c}</span>
+                            </div>
+                            <p><b>To read the review, you need to write a review for someone else.</b></p>
+                            <aura:set attribute="else">
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Write a Review for <b>{!v.receipient.Name}</b></h2>
+                                <p class="slds-m-top_x-small">
+                                    Select from a list of Recently Viewed Items for your review OR write your own.
+                                </p>    
+                            </aura:set>
+                        </aura:if>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <lightning:layout horizontalAlign="space" pullToBoundary="large">
+                            <lightning:layoutItem flexibility="shrink" padding="around-small">
+                                <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Name</th>
+                                            <th scope="col">Object</th>
+                                            <th scope="col">Type</th>
+                                            <th scope="col">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <aura:iteration items="{!v.recentlyViewedRecs}" var="rv" indexVar="idx">
+                                            <tr>
+                                                <td data-label="Name">
+                                                    <div class="slds-truncate">{!rv.Name}</div>
+                                                </td>
+                                                <td data-label="Name">
+                                                    <div class="slds-truncate">{!rv.Type}</div>
+                                                </td>
+                                                <td data-label="Type">
+                                                    <div class="slds-truncate">{!rv.RecordType.Name}</div>
+                                                </td>
+                                                <td data-label="Action">
+                                                    <div class="slds-truncate"><a data-review="{!idx}" onclick="{!c.updateTopic}">Select</a></div>
+                                                </td>
+                                            </tr>
+                                        </aura:iteration>
+                                    </tbody>
+                                    
+                                </table>
+                            </lightning:layoutItem>
+                            
+                            <lightning:layoutItem flexibility="grow" padding="around-small">
+                                <div class="slds-form--stacked">
+                                    <lightning:layoutItem flexibility="auto" padding="around-small">
+                                        <aura:if isTrue="{!v.isReplying}">
+                                            <label class="slds-form-element__label">Receipient
+                                                <force:inputField aura:id="userid" 
+                                                                  value="{!v.reviewReply.User__c}" change="{!c.updateReceipient}" />
+                                            </label>    
+                                            <aura:set attribute="else">
+                                                <label class="slds-form-element__label">Receipient</label>
+                                                <ui:outputText value="{!v.receipient.Name}" />
+                                            </aura:set>
+                                        </aura:if>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                                <lightning:input aura:id="topic"
+                                                                 id="form-element-01"
+                                                                 label="Topic"
+                                                                  value="{!v.review.Topic__c}" />
+                                        
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <lightning:textarea value="{!v.review.Review__c}" label="Review"/>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" size="4">
+                                        <lightning:select name="selectItem" label="Reaction" value="{!v.review.Reaction__c}" >
+                                            <option>Very Happy</option>
+                                            <option>Happy</option>
+                                            <option>Sad</option>
+                                            <option>Ver Sad</option>
+                                        </lightning:select>
+                                        
+                                        <!-- 
+                                        <label class="slds-form-element__label">Reaction</label>
+                                        <div class="slds-button-group" role="group">
+                                            <button class="slds-button slds-button_icon slds-button_icon-brand">
+                                                <img style="width:28px;" src="{!$Resource.emojis + '/veryhappy.svg'}" title="Very Happy" />
+                                                <span class="slds-assistive-text">Very Happy</span>
+                                            </button>
+                                            <button class="slds-button slds-button_icon slds-button_icon-border-filled">
+                                                <img style="width:25px;" src="{!$Resource.emojis + '/happy.svg'}" title="Happy" />
+                                                <span class="slds-assistive-text">Happy</span>
+                                            </button>
+                                            <button class="slds-button slds-button_icon slds-button_icon-border-filled">
+                                                <img style="width:25px;" src="{!$Resource.emojis + '/sad.svg'}" title="Sad" />
+                                                <span class="slds-assistive-text">Sad</span>
+                                            </button>
+                                            <button class="slds-button slds-button_icon slds-button_icon-border-filled">
+                                                <img style="width:25px;" src="{!$Resource.emojis + '/verysad.svg'}" title="Very Sad" />
+                                                <span class="slds-assistive-text">Very Sad</span>
+                                            </button>
+                                        </div>
+										-->
+                                    </lightning:layoutItem>
+                                </div>    
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        
+                        
+                        
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_neutral" onclick="{! c.closeWriteReviewModal }">Close</button>
+                        <button class="slds-button slds-button_brand" onclick="{! c.submitReview }">Submit</button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" aura:id="backdrop"></div>    
+        </aura:set>
+    </aura:if>    
+</aura:component>
